@@ -1,13 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script src="/socket.io/socket.io.js"></script>
     <script src="https://npmcdn.com/babel-core@5.8.38/browser.min.js"></script>
     <script type="text/babel" >
         "use strict";
+        let canvas;
+        let ctx;
+        let sendBufferCanvas;
+        let sendBufferCtx;
     
+        const user = `user${(Math.floor((Math.random()*1000))+ 1)}`;
+        let draws = {};
+        let socket;
+        
+        
+        const setup = () => {
+            sendBufferCanvas = document.createElement("canvas");
+            sendBufferCanvas.height = 200;
+            sendBufferCanvas.width = 200;
+            sendBufferCtx = sendBufferCanvas.getContext("2d");
+            sendBufferCtx.fillStyle = 'red';
+            sendBufferCtx.fillRect(0,0,200,200);
+            
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0,0,200,200);
+            
+            const data = {
+                x: 300,
+                y: 300,
+                height: 200,
+                width: 200,
+                imgData: sendBufferCanvas.toDataURL(),
+            };
+            
+            socket.emit("draw", data);
+        }
+        
+        const handleMessage = (data) => {
+            let image = new Image();
+            
+            image.onload = () => {
+                ctx.save();
+                ctx.globalCompositeOperation = "source-over";
+                ctx.drawImage(image, data.x, data.y, data.width, data.height);
+                ctx.restore();
+            };
+            
+            image.src = data.imgData;
+        }
+
+        
+        const init = () => {
+            canvas = document.getElementById("canvas");
+            ctx = canvas.getContext("2d");
+            
+            
+            socket = io.connect();
+            
+            socket.on('connect', () => {
+                setup();
+            });
+            
+            socket.on('updated', handleMessage);
+        }
+        
+        window.onload = init;
     </script>
 </head>
 <body>
+    <canvas id="canvas" width="720" height="480" style="border:1px solid #000000;"></canvas>
 
 </body>
 </html>
